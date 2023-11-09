@@ -22,13 +22,6 @@ const f1 = () => mpgData.col("hwy").bin({ width: width.value() });
 const f2 = () => mpgData.col("displ").bin();
 const f3 = () => f1().product(f2());
 
-const reducedData = () =>
-  mpgData.reduceAcross(
-    f3(),
-    () => ({ sum: num(0) }),
-    ({ sum }, { hwy, displ }) => ({ sum: sum.add(hwy).add(displ) })
-  );
-
 const factors = [f1, f3] as const;
 
 const reducer = Reducer.of(
@@ -38,4 +31,4 @@ const reducer = Reducer.of(
   ({ sum }, { hwy }) => ({ sum: sum.add(hwy) })
 );
 
-const g = reducer.getters[1]();
+const z = reducer.get(1);

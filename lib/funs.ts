@@ -5,6 +5,12 @@ export async function fetchData(path: string) {
   return await response.json();
 }
 
+export function just<T>(x: T) {
+  return function () {
+    return x;
+  };
+}
+
 export function computeBreaks(
   min: number,
   max: number,

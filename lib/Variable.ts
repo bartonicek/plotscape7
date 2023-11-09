@@ -1,5 +1,5 @@
 import { Lazy, Stringable, asString } from "@abartonicek/utilities";
-import { BinOptions, bin } from "./Factor";
+import { BinOptions, FromOptions, bin, from } from "./Factor";
 import { NumMetadata, StrMetadata } from "./Metadata";
 import { Num, Ref, ScalarLike, Str } from "./Scalar";
 import { View } from "./Value";
@@ -16,7 +16,7 @@ export type VariableLike<T extends ScalarLike<any>> = {
 type NumVariableOptions = { name?: string; metadata?: NumMetadata };
 
 export class NumVariable implements VariableLike<Num> {
-  metadata: NumMetadata;
+  private metadata: NumMetadata;
 
   constructor(private array: number[], options?: NumVariableOptions) {
     this.metadata = options?.metadata ?? NumMetadata.from(array, options?.name);
@@ -57,7 +57,7 @@ type StrVariableOptions = { name?: string; metadata?: StrMetadata };
 
 export class StrVariable implements VariableLike<Str> {
   array: string[];
-  metadata: StrMetadata;
+  private metadata: StrMetadata;
 
   constructor(array: Stringable[], options?: StrVariableOptions) {
     this.array = array.map(asString);
@@ -89,6 +89,16 @@ export class StrVariable implements VariableLike<Str> {
 
   meta() {
     return this.metadata.values();
+  }
+
+  factorize(options?: FromOptions) {
+    const meta = this.meta();
+    return from(this.array, {
+      name: meta.name,
+      labels: Array.from(meta.values),
+      sort: true,
+      ...options,
+    });
   }
 }
 

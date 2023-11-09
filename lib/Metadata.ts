@@ -43,7 +43,7 @@ export class StrMetadata implements Metadata<string> {
   }
 
   static from(array: string[], name?: string) {
-    return StrMetadata.of({ values: new Set(array) });
+    return StrMetadata.of({ name, values: new Set(array) });
   }
 
   values() {

@@ -1,7 +1,12 @@
-import { diff, minMax } from "@abartonicek/utilities";
+import { compareAlphaNumeric, diff, minMax } from "@abartonicek/utilities";
 import { Dataframe } from "./Dataframe";
 import { NumMetadata } from "./Metadata";
-import { IndexedVariable, NumVariable, RefVariable } from "./Variable";
+import {
+  IndexedVariable,
+  NumVariable,
+  RefVariable,
+  StrVariable,
+} from "./Variable";
 import { computeBreaks } from "./funs";
 import { PARENT, POSITONS } from "./symbols";
 import { DisjointUnion, Variables } from "./types";
@@ -45,6 +50,34 @@ export class Factor<T extends Variables> implements FactorLike<T> {
   }
 }
 
+export type FromOptions = { name?: string; labels?: string[]; sort?: boolean };
+
+export function from(array: string[], options?: FromOptions) {
+  const labels = options?.labels ?? Array.from(new Set(array));
+  if (options?.sort ?? true) labels.sort(compareAlphaNumeric);
+
+  let uniqueIndices = new Set<number>();
+  const indices = [] as number[];
+  const positions = [] as Set<number>[];
+
+  for (let i = 0; i < labels.length; i++) positions.push(new Set());
+
+  for (let i = 0; i < array.length; i++) {
+    const index = labels.indexOf(array[i]);
+    uniqueIndices.add(index);
+    positions[index].add(i);
+    indices.push(index);
+  }
+
+  uniqueIndices = new Set(Array.from(uniqueIndices).sort(diff));
+  const data = Dataframe.of({
+    label: StrVariable.of(labels),
+    [POSITONS]: RefVariable.of(positions),
+  });
+
+  return new Factor(uniqueIndices, indices, data);
+}
+
 export type BinOptions = {
   name?: string;
   min?: number;
@@ -62,13 +95,13 @@ export function bin(array: number[], options?: BinOptions) {
 
   const uniqueIndices = new Set<number>();
   const indices = [] as number[];
-  const positions = {} as Record<number, Set<number>>;
+  const positionsMap = {} as Record<number, Set<number>>;
 
   for (let i = 0; i < array.length; i++) {
     const index = breaks.findIndex((br) => br >= array[i]) - 1;
-    if (!positions[index]) positions[index] = new Set();
+    if (!positionsMap[index]) positionsMap[index] = new Set();
 
-    positions[index].add(i);
+    positionsMap[index].add(i);
     uniqueIndices.add(index);
     indices.push(index);
   }
@@ -83,12 +116,12 @@ export function bin(array: number[], options?: BinOptions) {
     binMax.push(breaks[i + 1]);
   }
 
-  const metadata = NumMetadata.from(breaks);
+  const metadata = NumMetadata.from(breaks, name);
 
   const cols = {
-    bin0: NumVariable.of(binMin, { name, metadata }),
-    bin1: NumVariable.of(binMax, { name, metadata }),
-    [POSITONS]: RefVariable.of(Object.values(positions)),
+    bin0: NumVariable.of(binMin, { metadata }),
+    bin1: NumVariable.of(binMax, { metadata }),
+    [POSITONS]: RefVariable.of(Object.values(positionsMap)),
   };
 
   const data = Dataframe.of(cols);
